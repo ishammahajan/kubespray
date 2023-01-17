@@ -9,7 +9,7 @@ kubelet_bind_address: "{{ ip | default('0.0.0.0') }}"
 kube_resolv_conf: "/etc/resolv.conf"
 
 # Set to empty to avoid cgroup creation
-kubelet_enforce_node_allocatable: "\"\""
+kubelet_enforce_node_allocatable: '""'
 
 # Set runtime and kubelet cgroups when using systemd as cgroup driver (default)
 kubelet_runtime_cgroups: "/systemd/system.slice"
@@ -205,7 +205,6 @@ azure_disable_outbound_snat: false
 azure_use_instance_metadata: true
 # use specific Azure API endpoints
 azure_cloud: AzurePublicCloud
-
 ## Support tls min version, Possible values: VersionTLS10, VersionTLS11, VersionTLS12, VersionTLS13.
 # tls_min_version: ""
 

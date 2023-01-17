@@ -1,18 +1,18 @@
 data "openstack_images_image_v2" "vm_image" {
-  count = var.image_uuid == "" ? 1 : 0
+  count       = var.image_uuid == "" ? 1 : 0
   most_recent = true
-  name = var.image
+  name        = var.image
 }
 
 data "openstack_images_image_v2" "gfs_image" {
-  count = var.image_gfs_uuid == "" ? var.image_uuid == "" ? 1 : 0 : 0
+  count       = var.image_gfs_uuid == "" ? var.image_uuid == "" ? 1 : 0 : 0
   most_recent = true
-  name = var.image_gfs == "" ? var.image : var.image_gfs
+  name        = var.image_gfs == "" ? var.image : var.image_gfs
 }
 
 data "openstack_images_image_v2" "image_master" {
   count = var.image_master_uuid == "" ? var.image_uuid == "" ? 1 : 0 : 0
-  name = var.image_master == "" ? var.image : var.image_master
+  name  = var.image_master == "" ? var.image : var.image_master
 }
 
 data "template_file" "cloudinit" {
@@ -61,6 +61,34 @@ resource "openstack_networking_secgroup_rule_v2" "k8s_master_ports" {
   port_range_min    = lookup(var.master_allowed_ports[count.index], "port_range_min")
   port_range_max    = lookup(var.master_allowed_ports[count.index], "port_range_max")
   remote_ip_prefix  = lookup(var.master_allowed_ports[count.index], "remote_ip_prefix", "0.0.0.0/0")
+  security_group_id = openstack_networking_secgroup_v2.k8s_master.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "k8s_master_ping" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "icmp"
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.k8s_master.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "k8s_master_http" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = "80"
+  port_range_max    = "80"
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.k8s_master.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "k8s_master_https" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = "443"
+  port_range_max    = "443"
+  remote_ip_prefix  = "0.0.0.0/0"
   security_group_id = openstack_networking_secgroup_v2.k8s_master.id
 }
 
@@ -168,33 +196,33 @@ resource "openstack_compute_servergroup_v2" "k8s_etcd" {
 }
 
 locals {
-# master groups
+  # master groups
   master_sec_groups = compact([
     openstack_networking_secgroup_v2.k8s_master.id,
     openstack_networking_secgroup_v2.k8s.id,
-    var.extra_sec_groups ?openstack_networking_secgroup_v2.k8s_master_extra[0].id : "",
+    var.extra_sec_groups ? openstack_networking_secgroup_v2.k8s_master_extra[0].id : "",
   ])
-# worker groups
+  # worker groups
   worker_sec_groups = compact([
     openstack_networking_secgroup_v2.k8s.id,
     openstack_networking_secgroup_v2.worker.id,
     var.extra_sec_groups ? openstack_networking_secgroup_v2.worker_extra[0].id : "",
   ])
-# bastion groups
+  # bastion groups
   bastion_sec_groups = compact(concat([
     openstack_networking_secgroup_v2.k8s.id,
     openstack_networking_secgroup_v2.bastion[0].id,
   ]))
-# etcd groups
+  # etcd groups
   etcd_sec_groups = compact([openstack_networking_secgroup_v2.k8s.id])
-# glusterfs groups
+  # glusterfs groups
   gfs_sec_groups = compact([openstack_networking_secgroup_v2.k8s.id])
 
-# Image uuid
+  # Image uuid
   image_to_use_node = var.image_uuid != "" ? var.image_uuid : data.openstack_images_image_v2.vm_image[0].id
-# Image_gfs uuid
+  # Image_gfs uuid
   image_to_use_gfs = var.image_gfs_uuid != "" ? var.image_gfs_uuid : var.image_uuid != "" ? var.image_uuid : data.openstack_images_image_v2.gfs_image[0].id
-# image_master uuidimage_gfs_uuid
+  # image_master uuidimage_gfs_uuid
   image_to_use_master = var.image_master_uuid != "" ? var.image_master_uuid : var.image_uuid != "" ? var.image_uuid : data.openstack_images_image_v2.image_master[0].id
 }
 
@@ -216,12 +244,12 @@ resource "openstack_networking_port_v2" "bastion_port" {
 }
 
 resource "openstack_compute_instance_v2" "bastion" {
-  name       = "${var.cluster_name}-bastion-${count.index + 1}"
-  count      = var.number_of_bastions
-  image_id   = var.bastion_root_volume_size_in_gb == 0 ? local.image_to_use_node : null
-  flavor_id  = var.flavor_bastion
-  key_pair   = openstack_compute_keypair_v2.k8s.name
-  user_data  = data.template_file.cloudinit.rendered
+  name      = "${var.cluster_name}-bastion-${count.index + 1}"
+  count     = var.number_of_bastions
+  image_id  = var.bastion_root_volume_size_in_gb == 0 ? local.image_to_use_node : null
+  flavor_id = var.flavor_bastion
+  key_pair  = openstack_compute_keypair_v2.k8s.name
+  user_data = data.template_file.cloudinit.rendered
 
   dynamic "block_device" {
     for_each = var.bastion_root_volume_size_in_gb > 0 ? [local.image_to_use_node] : []
@@ -850,40 +878,40 @@ resource "openstack_compute_instance_v2" "glusterfs_node_no_floating_ip" {
 }
 
 resource "openstack_networking_floatingip_associate_v2" "bastion" {
-  count                 = var.number_of_bastions
-  floating_ip           = var.bastion_fips[count.index]
-  port_id               = element(openstack_networking_port_v2.bastion_port.*.id, count.index)
+  count       = var.number_of_bastions
+  floating_ip = var.bastion_fips[count.index]
+  port_id     = element(openstack_networking_port_v2.bastion_port.*.id, count.index)
 }
 
 
 resource "openstack_networking_floatingip_associate_v2" "k8s_master" {
-  count                 = var.number_of_k8s_masters
-  floating_ip           = var.k8s_master_fips[count.index]
-  port_id               = element(openstack_networking_port_v2.k8s_master_port.*.id, count.index)
+  count       = var.number_of_k8s_masters
+  floating_ip = var.k8s_master_fips[count.index]
+  port_id     = element(openstack_networking_port_v2.k8s_master_port.*.id, count.index)
 }
 
 resource "openstack_networking_floatingip_associate_v2" "k8s_masters" {
-  for_each              = var.number_of_k8s_masters == 0 && var.number_of_k8s_masters_no_etcd == 0 && var.number_of_k8s_masters_no_floating_ip == 0 && var.number_of_k8s_masters_no_floating_ip_no_etcd == 0 ? { for key, value in var.k8s_masters : key => value if value.floating_ip } : {}
-  floating_ip           = var.k8s_masters_fips[each.key].address
-  port_id               = openstack_networking_port_v2.k8s_masters_port[each.key].id
+  for_each    = var.number_of_k8s_masters == 0 && var.number_of_k8s_masters_no_etcd == 0 && var.number_of_k8s_masters_no_floating_ip == 0 && var.number_of_k8s_masters_no_floating_ip_no_etcd == 0 ? { for key, value in var.k8s_masters : key => value if value.floating_ip } : {}
+  floating_ip = var.k8s_masters_fips[each.key].address
+  port_id     = openstack_networking_port_v2.k8s_masters_port[each.key].id
 }
 
 resource "openstack_networking_floatingip_associate_v2" "k8s_master_no_etcd" {
-  count                 = var.master_root_volume_size_in_gb == 0 ? var.number_of_k8s_masters_no_etcd : 0
-  floating_ip           = var.k8s_master_no_etcd_fips[count.index]
-  port_id               = element(openstack_networking_port_v2.k8s_master_no_etcd_port.*.id, count.index)
+  count       = var.master_root_volume_size_in_gb == 0 ? var.number_of_k8s_masters_no_etcd : 0
+  floating_ip = var.k8s_master_no_etcd_fips[count.index]
+  port_id     = element(openstack_networking_port_v2.k8s_master_no_etcd_port.*.id, count.index)
 }
 
 resource "openstack_networking_floatingip_associate_v2" "k8s_node" {
-  count                 = var.node_root_volume_size_in_gb == 0 ? var.number_of_k8s_nodes : 0
-  floating_ip           = var.k8s_node_fips[count.index]
-  port_id               = element(openstack_networking_port_v2.k8s_node_port.*.id, count.index)
+  count       = var.node_root_volume_size_in_gb == 0 ? var.number_of_k8s_nodes : 0
+  floating_ip = var.k8s_node_fips[count.index]
+  port_id     = element(openstack_networking_port_v2.k8s_node_port.*.id, count.index)
 }
 
 resource "openstack_networking_floatingip_associate_v2" "k8s_nodes" {
-  for_each              = var.number_of_k8s_nodes == 0 && var.number_of_k8s_nodes_no_floating_ip == 0 ? { for key, value in var.k8s_nodes : key => value if value.floating_ip } : {}
-  floating_ip           = var.k8s_nodes_fips[each.key].address
-  port_id               = openstack_networking_port_v2.k8s_nodes_port[each.key].id
+  for_each    = var.number_of_k8s_nodes == 0 && var.number_of_k8s_nodes_no_floating_ip == 0 ? { for key, value in var.k8s_nodes : key => value if value.floating_ip } : {}
+  floating_ip = var.k8s_nodes_fips[each.key].address
+  port_id     = openstack_networking_port_v2.k8s_nodes_port[each.key].id
 }
 
 resource "openstack_blockstorage_volume_v2" "glusterfs_volume" {
