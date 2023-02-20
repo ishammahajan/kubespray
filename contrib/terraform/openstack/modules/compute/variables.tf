@@ -121,6 +121,7 @@ variable "k8s_masters" {
     az                     = string
     flavor                 = string
     floating_ip            = bool
+    floating_ip_address    = optional(string)
     etcd                   = bool
     image_id               = optional(string)
     root_volume_size_in_gb = optional(number)

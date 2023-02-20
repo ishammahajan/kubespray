@@ -933,9 +933,9 @@ resource "openstack_networking_floatingip_associate_v2" "k8s_master" {
 }
 
 resource "openstack_networking_floatingip_associate_v2" "k8s_masters" {
-  for_each              = var.number_of_k8s_masters == 0 && var.number_of_k8s_masters_no_etcd == 0 && var.number_of_k8s_masters_no_floating_ip == 0 && var.number_of_k8s_masters_no_floating_ip_no_etcd == 0 ? { for key, value in var.k8s_masters : key => value if value.floating_ip } : {}
-  floating_ip           = var.k8s_masters_fips[each.key].address
-  port_id               = openstack_networking_port_v2.k8s_masters_port[each.key].id
+  for_each    = var.number_of_k8s_masters == 0 && var.number_of_k8s_masters_no_etcd == 0 && var.number_of_k8s_masters_no_floating_ip == 0 && var.number_of_k8s_masters_no_floating_ip_no_etcd == 0 ? { for key, value in var.k8s_masters : key => value if value.floating_ip } : {}
+  floating_ip = each.value.floating_ip_address != "" ? each.value.floating_ip_address : var.k8s_masters_fips[each.key].address
+  port_id     = openstack_networking_port_v2.k8s_masters_port[each.key].id
 }
 
 resource "openstack_networking_floatingip_associate_v2" "k8s_master_no_etcd" {

@@ -15,7 +15,7 @@ resource "openstack_networking_floatingip_v2" "k8s_master" {
 }
 
 resource "openstack_networking_floatingip_v2" "k8s_masters" {
-  for_each   = var.number_of_k8s_masters == 0 && var.number_of_k8s_masters_no_etcd == 0 ? { for key, value in var.k8s_masters : key => value if value.floating_ip } : {}
+  for_each   = var.number_of_k8s_masters == 0 && var.number_of_k8s_masters_no_etcd == 0 ? { for key, value in var.k8s_masters : key => value if value.floating_ip && value.floating_ip_address == null } : {}
   pool       = var.floatingip_pool
   depends_on = [null_resource.dummy_dependency]
 }
