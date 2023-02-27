@@ -77,43 +77,43 @@ variable "network_router_id" {
 }
 
 variable "k8s_master_fips" {
-  type = list
+  type = list(any)
 }
 
 variable "k8s_master_no_etcd_fips" {
-  type = list
+  type = list(any)
 }
 
 variable "k8s_node_fips" {
-  type = list
+  type = list(any)
 }
 
 variable "k8s_masters_fips" {
-  type = map
+  type = map(any)
 }
 
 variable "k8s_nodes_fips" {
-  type = map
+  type = map(any)
 }
 
 variable "bastion_fips" {
-  type = list
+  type = list(any)
 }
 
 variable "bastion_allowed_remote_ips" {
-  type = list
+  type = list(any)
 }
 
 variable "master_allowed_remote_ips" {
-  type = list
+  type = list(any)
 }
 
 variable "k8s_allowed_remote_ips" {
-  type = list
+  type = list(any)
 }
 
 variable "k8s_allowed_egress_ips" {
-  type = list
+  type = list(any)
 }
 
 variable "k8s_masters" {
@@ -132,17 +132,17 @@ variable "k8s_masters" {
 
 variable "k8s_nodes" {
   type = map(object({
-    az                     = string
-    flavor                 = string
-    floating_ip            = bool
-    extra_groups           = optional(string)
-    image_id               = optional(string)
-    root_volume_size_in_gb = optional(number)
-    volume_type            = optional(string)
-    network_id             = optional(string)
+    az                       = string
+    flavor                   = string
+    floating_ip              = bool
+    extra_groups             = optional(string)
+    image_id                 = optional(string)
+    root_volume_size_in_gb   = optional(number)
+    volume_type              = optional(string)
+    network_id               = optional(string)
     additional_server_groups = optional(list(string))
-    server_group           = optional(string)
-    cloudinit              = optional(object({
+    server_group             = optional(string)
+    cloudinit = optional(object({
       extra_partitions = list(object({
         volume_path     = string
         partition_path  = string
@@ -169,15 +169,15 @@ variable "supplementary_node_groups" {
 }
 
 variable "master_allowed_ports" {
-  type = list
+  type = list(any)
 }
 
 variable "worker_allowed_ports" {
-  type = list
+  type = list(any)
 }
 
 variable "bastion_allowed_ports" {
-  type = list
+  type = list(any)
 }
 
 variable "use_access_ip" {}
