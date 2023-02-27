@@ -12,16 +12,21 @@ data "openstack_networking_router_v2" "k8s" {
 
 resource "openstack_networking_network_v2" "k8s" {
   name                  = var.network_name
-  count                 = var.use_neutron
+  count                 = var.use_neutron == 1 && var.use_existing_network == false ? 1 : 0
   dns_domain            = var.network_dns_domain != null ? var.network_dns_domain : null
   admin_state_up        = "true"
   port_security_enabled = var.port_security_enabled
 }
 
+data "openstack_networking_network_v2" "k8s" {
+  name  = var.network_name
+  count = var.use_neutron == 1 && var.use_existing_network == true ? 1 : 0
+}
+
 resource "openstack_networking_subnet_v2" "k8s" {
   name            = "${var.cluster_name}-internal-network"
   count           = var.use_neutron
-  network_id      = openstack_networking_network_v2.k8s[count.index].id
+  network_id      = "%{if var.use_existing_network == true}${element(concat(data.openstack_networking_network_v2.k8s.*.id, [""]), 0)}%{else}${element(concat(openstack_networking_network_v2.k8s.*.id, [""]), 0)}%{endif}"
   cidr            = var.subnet_cidr
   ip_version      = 4
   dns_nameservers = var.dns_nameservers

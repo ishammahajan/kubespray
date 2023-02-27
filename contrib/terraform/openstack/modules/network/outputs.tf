@@ -3,7 +3,7 @@ output "router_id" {
 }
 
 output "network_id" {
-  value = element(concat(openstack_networking_network_v2.k8s.*.id, [""]),0)
+  value = "%{if var.use_existing_network == true}${element(concat(data.openstack_networking_network_v2.k8s.*.id, [""]), 0)}%{else}${element(concat(openstack_networking_network_v2.k8s.*.id, [""]), 0)}%{endif}"
 }
 
 output "router_internal_port_id" {

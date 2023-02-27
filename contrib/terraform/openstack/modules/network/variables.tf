@@ -19,3 +19,5 @@ variable "subnet_cidr" {}
 variable "use_neutron" {}
 
 variable "router_id" {}
+
+variable "use_existing_network" {}

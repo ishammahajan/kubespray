@@ -10,6 +10,7 @@ module "network" {
   use_neutron           = var.use_neutron
   port_security_enabled = var.port_security_enabled
   router_id             = var.router_id
+  use_existing_network  = var.use_existing_network
 }
 
 module "ips" {
