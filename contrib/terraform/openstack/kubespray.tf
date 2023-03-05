@@ -100,6 +100,8 @@ module "compute" {
   use_existing_network                         = var.use_existing_network
   private_subnet_id                            = module.network.subnet_id
   additional_server_groups                     = var.additional_server_groups
+  jupyterhub_floating_ip                       = var.jupyterhub_floating_ip
+  jupyterhub_port_ip                           = var.jupyterhub_port_ip
 
   depends_on = [
     module.network.subnet_id

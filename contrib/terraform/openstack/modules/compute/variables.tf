@@ -233,3 +233,18 @@ variable "force_null_port_security" {
 variable "private_subnet_id" {
   type = string
 }
+
+# Custom Variables for I-GUIDE's JupyterHub Deployment
+
+# The IP address that JupyterHub will listen on
+variable "jupyterhub_floating_ip" {
+  description = "The IP address that JupyterHub will listen on"
+  type        = string
+  default     = ""
+}
+
+variable "jupyterhub_port_ip" {
+  description = "The port IP (internal IP) that JupyterHub will listen on"
+  type        = string
+  default     = ""
+}

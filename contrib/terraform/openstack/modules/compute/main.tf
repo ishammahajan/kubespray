@@ -304,6 +304,10 @@ resource "openstack_networking_port_v2" "k8s_master_port" {
     }
   }
 
+  allowed_address_pairs {
+    ip_address = openstack_networking_port_v2.jupyterhub_port.fixed_ip.0.ip_address
+  }
+
   depends_on = [
     var.network_router_id
   ]
@@ -747,6 +751,10 @@ resource "openstack_networking_port_v2" "k8s_node_no_floating_ip_port" {
     }
   }
 
+  allowed_address_pairs {
+    ip_address = openstack_networking_port_v2.jupyterhub_port.fixed_ip.0.ip_address
+  }
+
   depends_on = [
     var.network_router_id
   ]
@@ -860,6 +868,15 @@ resource "openstack_compute_instance_v2" "k8s_nodes" {
   }
 }
 
+resource "openstack_networking_port_v2" "jupyterhub_port" {
+  name       = "JupyterHub Port"
+  network_id = var.use_existing_network ? data.openstack_networking_network_v2.k8s_network[0].id : var.network_id
+  fixed_ip {
+    subnet_id  = var.private_subnet_id
+    ip_address = var.jupyterhub_port_ip
+  }
+}
+
 resource "openstack_networking_port_v2" "glusterfs_node_no_floating_ip_port" {
   count                 = var.number_of_gfs_nodes_no_floating_ip
   name                  = "${var.cluster_name}-gfs-node-nf-${count.index + 1}"
@@ -954,6 +971,11 @@ resource "openstack_networking_floatingip_associate_v2" "k8s_nodes" {
   for_each    = var.number_of_k8s_nodes == 0 && var.number_of_k8s_nodes_no_floating_ip == 0 ? { for key, value in var.k8s_nodes : key => value if value.floating_ip } : {}
   floating_ip = var.k8s_nodes_fips[each.key].address
   port_id     = openstack_networking_port_v2.k8s_nodes_port[each.key].id
+}
+
+resource "openstack_networking_floatingip_associate_v2" "jupyterhub_deployment" {
+  floating_ip = var.jupyterhub_floating_ip
+  port_id     = openstack_networking_port_v2.jupyterhub_port.id
 }
 
 resource "openstack_blockstorage_volume_v2" "glusterfs_volume" {
