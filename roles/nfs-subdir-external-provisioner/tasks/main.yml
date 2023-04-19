@@ -1,0 +1,36 @@
+---
+- name: Add stable Helm repository
+  ansible.builtin.command:
+    cmd: "helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/"
+    creates: /root/.cache/helm/repository/nfs-subdir-external-provisioner-index.yaml
+  delegate_to: "{{ groups['kube_control_plane'][0] }}"
+  run_once: true
+
+- name: Update Helm repositories
+  ansible.builtin.command:
+    cmd: helm repo update
+  delegate_to: "{{ groups['kube_control_plane'][0] }}"
+  run_once: true
+
+- name: Install NFS client package
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - nfs-common
+  become: true
+
+- name: Install nfs-subdir-external-provisioner Helm chart
+  ansible.builtin.command:
+    cmd: >
+      helm upgrade --install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner
+      --namespace jhub-nfs
+      --create-namespace
+      --set nfs.server=192.168.0.236
+      --set nfs.path=/srv/nfs
+      --set storageClass.defaultClass=true
+      --set storageClass.pathPattern="${.PVC.namespace}-${.PVC.name}"
+  delegate_to: "{{ groups['kube_control_plane'][0] }}"
+  args:
+    creates: /root/.local/share/helm/manifests/nfs-subdir-external-provisioner
+  run_once: true
