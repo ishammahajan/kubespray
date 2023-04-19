@@ -1,0 +1,31 @@
+---
+- name: Add JupyterHub Helm repository
+  ansible.builtin.command:
+    cmd: "helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/"
+    creates: /root/.cache/helm/repository/jupyterhub-index.yaml
+  delegate_to: "{{ groups['kube_control_plane'][0] }}"
+  run_once: true
+
+- name: Update Helm repositories
+  ansible.builtin.command:
+    cmd: helm repo update
+  delegate_to: "{{ groups['kube_control_plane'][0] }}"
+  run_once: true
+
+- name: Copy JupyterHub config file to remote
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/inventory/dev/config.yaml"
+    dest: /tmp/config.yaml
+  delegate_to: "{{ groups['kube_control_plane'][0] }}"
+  run_once: true
+
+- name: Install or upgrade JupyterHub Helm chart
+  ansible.builtin.command:
+    cmd: >
+      helm upgrade --install my-jupyterhub jupyterhub/jupyterhub
+      --namespace jhub-test
+      --create-namespace
+      --version 2.0.0
+      --values /tmp/config.yaml
+  delegate_to: "{{ groups['kube_control_plane'][0] }}"
+  run_once: true
