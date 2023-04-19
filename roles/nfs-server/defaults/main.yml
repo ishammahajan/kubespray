@@ -1,0 +1,6 @@
+---
+nfs_export_directory: "/srv/nfs"
+nfs_export_owner: "root"
+nfs_export_group: "root"
+nfs_export_mode: "0777"
+nfs_allowed_clients: ["*"]

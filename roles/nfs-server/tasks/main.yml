@@ -1,0 +1,36 @@
+---
+- name: Install NFS server package
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - nfs-kernel-server # For Debian/Ubuntu systems
+    #- nfs-utils          # Uncomment for RHEL/CentOS/Fedora systems
+  become: true
+
+- name: Create NFS export directory
+  ansible.builtin.file:
+    path: "{{ nfs_export_directory }}"
+    state: directory
+    owner: "{{ nfs_export_owner }}"
+    group: "{{ nfs_export_group }}"
+    mode: "{{ nfs_export_mode }}"
+  become: true
+
+- name: Configure NFS exports
+  ansible.builtin.template:
+    src: "exports.j2"
+    dest: "/etc/exports"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  become: true
+  notify: Restart NFS server
+
+- name: Ensure NFS server is running and enabled
+  ansible.builtin.systemd:
+    name: nfs-server
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  become: true
