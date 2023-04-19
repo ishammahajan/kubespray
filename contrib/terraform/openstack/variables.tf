@@ -50,6 +50,10 @@ variable "number_of_gfs_nodes_no_floating_ip" {
   default = 0
 }
 
+variable "number_of_nfs_nodes_no_floating_ip" {
+  default = 0
+}
+
 variable "bastion_root_volume_size_in_gb" {
   default = 0
 }
@@ -74,6 +78,14 @@ variable "gfs_volume_size_in_gb" {
   default = 75
 }
 
+variable "nfs_root_volume_size_in_gb" {
+  default = 0
+}
+
+variable "nfs_volume_size_in_gb" {
+  default = 75
+}
+
 variable "master_volume_type" {
   default = "Default"
 }
@@ -93,7 +105,12 @@ variable "image" {
 }
 
 variable "image_gfs" {
-  description = "Glance image to use for GlusterFS"
+  description = "Glance image to use for NFS"
+  default     = ""
+}
+
+variable "image_nfs" {
+  description = "Glance image to use for NFS"
   default     = ""
 }
 
@@ -103,6 +120,11 @@ variable "ssh_user" {
 }
 
 variable "ssh_user_gfs" {
+  description = "used to fill out tags for ansible inventory"
+  default     = "ubuntu"
+}
+
+variable "ssh_user_nfs" {
   description = "used to fill out tags for ansible inventory"
   default     = "ubuntu"
 }
@@ -128,6 +150,11 @@ variable "flavor_etcd" {
 }
 
 variable "flavor_gfs_node" {
+  description = "Use 'openstack flavor list' command to see what your OpenStack instance uses for IDs"
+  default     = 3
+}
+
+variable "flavor_nfs_node" {
   description = "Use 'openstack flavor list' command to see what your OpenStack instance uses for IDs"
   default     = 3
 }
@@ -322,6 +349,11 @@ variable "image_uuid" {
 
 variable "image_gfs_uuid" {
   description = "uuid of image to be used on gluster fs nodes. If empty defaults to image_uuid"
+  default     = ""
+}
+
+variable "image_nfs_uuid" {
+  description = "uuid of image to be used on nfs nodes. If empty defaults to image_uuid"
   default     = ""
 }
 

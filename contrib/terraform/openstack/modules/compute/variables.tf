@@ -26,6 +26,8 @@ variable "number_of_bastions" {}
 
 variable "number_of_gfs_nodes_no_floating_ip" {}
 
+variable "number_of_nfs_nodes_no_floating_ip" {}
+
 variable "bastion_root_volume_size_in_gb" {}
 
 variable "etcd_root_volume_size_in_gb" {}
@@ -38,6 +40,10 @@ variable "gfs_root_volume_size_in_gb" {}
 
 variable "gfs_volume_size_in_gb" {}
 
+variable "nfs_root_volume_size_in_gb" {}
+
+variable "nfs_volume_size_in_gb" {}
+
 variable "master_volume_type" {}
 
 variable "node_volume_type" {}
@@ -48,9 +54,13 @@ variable "image" {}
 
 variable "image_gfs" {}
 
+variable "image_nfs" {}
+
 variable "ssh_user" {}
 
 variable "ssh_user_gfs" {}
+
+variable "ssh_user_nfs" {}
 
 variable "flavor_k8s_master" {}
 
@@ -59,6 +69,8 @@ variable "flavor_k8s_node" {}
 variable "flavor_etcd" {}
 
 variable "flavor_gfs_node" {}
+
+variable "flavor_nfs_node" {}
 
 variable "network_name" {}
 
@@ -207,6 +219,10 @@ variable "image_uuid" {
 }
 
 variable "image_gfs_uuid" {
+  type = string
+}
+
+variable "image_nfs_uuid" {
   type = string
 }
 

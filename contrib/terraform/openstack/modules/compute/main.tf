@@ -10,6 +10,12 @@ data "openstack_images_image_v2" "gfs_image" {
   name        = var.image_gfs == "" ? var.image : var.image_gfs
 }
 
+data "openstack_images_image_v2" "nfs_image" {
+  count       = var.image_nfs_uuid == "" ? var.image_uuid == "" ? 1 : 0 : 0
+  most_recent = true
+  name        = var.image_nfs == "" ? var.image : var.image_nfs
+}
+
 data "openstack_images_image_v2" "image_master" {
   count = var.image_master_uuid == "" ? var.image_uuid == "" ? 1 : 0 : 0
   name  = var.image_master == "" ? var.image : var.image_master
@@ -201,11 +207,15 @@ locals {
   etcd_sec_groups = compact([openstack_networking_secgroup_v2.k8s.id])
   # glusterfs groups
   gfs_sec_groups = compact([openstack_networking_secgroup_v2.k8s.id])
+  # nfs groups
+  nfs_sec_groups = compact([openstack_networking_secgroup_v2.k8s.id])
 
   # Image uuid
   image_to_use_node = var.image_uuid != "" ? var.image_uuid : data.openstack_images_image_v2.vm_image[0].id
   # Image_gfs uuid
   image_to_use_gfs = var.image_gfs_uuid != "" ? var.image_gfs_uuid : var.image_uuid != "" ? var.image_uuid : data.openstack_images_image_v2.gfs_image[0].id
+  # Image_nfs uuid
+  image_to_use_nfs = var.image_nfs_uuid != "" ? var.image_nfs_uuid : var.image_uuid != "" ? var.image_uuid : data.openstack_images_image_v2.nfs_image[0].id
   # image_master uuidimage_gfs_uuid
   image_to_use_master = var.image_master_uuid != "" ? var.image_master_uuid : var.image_uuid != "" ? var.image_uuid : data.openstack_images_image_v2.image_master[0].id
 
@@ -936,6 +946,65 @@ resource "openstack_compute_instance_v2" "glusterfs_node_no_floating_ip" {
   }
 }
 
+resource "openstack_networking_port_v2" "nfs_node_no_floating_ip_port" {
+  count                 = var.number_of_nfs_nodes_no_floating_ip
+  name                  = "${var.cluster_name}-nfs-node-nf-${count.index + 1}"
+  network_id            = var.use_existing_network ? data.openstack_networking_network_v2.k8s_network[0].id : var.network_id
+  admin_state_up        = "true"
+  port_security_enabled = var.force_null_port_security ? null : var.port_security_enabled
+  security_group_ids    = var.port_security_enabled ? local.nfs_sec_groups : null
+  no_security_groups    = var.port_security_enabled ? null : false
+  dynamic "fixed_ip" {
+    for_each = var.private_subnet_id == "" ? [] : [true]
+    content {
+      subnet_id = var.private_subnet_id
+    }
+  }
+
+  depends_on = [
+    var.network_router_id
+  ]
+}
+
+resource "openstack_compute_instance_v2" "nfs_node_no_floating_ip" {
+  name              = "${var.cluster_name}-nfs-node-nf-${count.index + 1}"
+  count             = var.number_of_nfs_nodes_no_floating_ip
+  availability_zone = element(var.az_list, count.index)
+  image_id          = var.nfs_root_volume_size_in_gb == 0 ? local.image_to_use_nfs : null
+  flavor_id         = var.flavor_nfs_node
+  key_pair          = openstack_compute_keypair_v2.k8s.name
+
+  dynamic "block_device" {
+    for_each = var.nfs_root_volume_size_in_gb > 0 ? [local.image_to_use_nfs] : []
+    content {
+      uuid                  = local.image_to_use_nfs
+      source_type           = "image"
+      volume_size           = var.nfs_root_volume_size_in_gb
+      boot_index            = 0
+      destination_type      = "volume"
+      delete_on_termination = true
+    }
+  }
+
+  network {
+    port = element(openstack_networking_port_v2.nfs_node_no_floating_ip_port.*.id, count.index)
+  }
+
+  dynamic "scheduler_hints" {
+    for_each = var.node_server_group_policy != "" ? [openstack_compute_servergroup_v2.k8s_node[0]] : []
+    content {
+      group = openstack_compute_servergroup_v2.k8s_node[0].id
+    }
+  }
+
+  metadata = {
+    ssh_user         = var.ssh_user_nfs
+    kubespray_groups = "nfs-cluster,network-storage,no_floating"
+    depends_on       = var.network_router_id
+    use_access_ip    = var.use_access_ip
+  }
+}
+
 resource "openstack_networking_floatingip_associate_v2" "bastion" {
   count       = var.number_of_bastions
   floating_ip = var.bastion_fips[count.index]
@@ -989,4 +1058,17 @@ resource "openstack_compute_volume_attach_v2" "glusterfs_volume" {
   count       = var.gfs_root_volume_size_in_gb == 0 ? var.number_of_gfs_nodes_no_floating_ip : 0
   instance_id = element(openstack_compute_instance_v2.glusterfs_node_no_floating_ip.*.id, count.index)
   volume_id   = element(openstack_blockstorage_volume_v3.glusterfs_volume.*.id, count.index)
+}
+
+resource "openstack_blockstorage_volume_v3" "nfs_volume" {
+  name        = "${var.cluster_name}-nfs_volume-${count.index + 1}"
+  count       = var.nfs_root_volume_size_in_gb == 0 ? var.number_of_nfs_nodes_no_floating_ip : 0
+  description = "Non-ephemeral volume for NFS"
+  size        = var.nfs_volume_size_in_gb
+}
+
+resource "openstack_compute_volume_attach_v2" "nfs_volume" {
+  count       = var.nfs_root_volume_size_in_gb == 0 ? var.number_of_nfs_nodes_no_floating_ip : 0
+  instance_id = element(openstack_compute_instance_v2.nfs_node_no_floating_ip.*.id, count.index)
+  volume_id   = element(openstack_blockstorage_volume_v3.nfs_volume.*.id, count.index)
 }
