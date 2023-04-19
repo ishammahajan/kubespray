@@ -1,0 +1,12 @@
+---
+- name: Copy custom ConfigMap file to the server
+  ansible.builtin.copy:
+    src: configmap.yml
+    dest: /tmp/configmap.yml
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Apply custom ConfigMap to cluster
+  ansible.builtin.command:
+    cmd: kubectl apply -f /tmp/configmap.yml -n jhub-test
