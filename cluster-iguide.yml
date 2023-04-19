@@ -1,0 +1,20 @@
+---
+- hosts: nfs-cluster
+  become: yes
+  roles:
+    - nfs-server
+
+- hosts: k8s_cluster
+  gather_facts: False
+  roles:
+    - { role: nfs-subdir-external-provisioner, tags: nfs-subdir-external-provisioner }
+      
+- hosts: k8s_cluster
+  gather_facts: False
+  roles:
+    - { role: jupyterhub-provisioner }
+
+- hosts: kube_control_plane
+  gather_facts: False
+  roles:
+    - { role: login-configmap-provisioner }
